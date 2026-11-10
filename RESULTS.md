@@ -1,6 +1,6 @@
 # API lab results
 
-## Run information
+## Part 0 run information (historical)
 
 - Date: 10 November 2026 (Asia/Bangkok).
 - Target: https://quickpizza.grafana.com.
@@ -14,10 +14,11 @@
   ```
 
 - Final result: **16 passed, 1 xfailed in 19.18 seconds**, exit code 0.
-- HTML report: [report.html](report.html). Its embedded results were checked:
-  17 cases, comprising 16 Passed and 1 XFailed. Opening the local file with
-  the browser tool was blocked by its URL policy, so visual inspection of the
-  report remains pending. Open it locally in a browser to review the layout.
+- The Part 0 report contained 17 cases: 16 Passed and 1 XFailed. Its run log
+  is retained in `tmp/part0/final-pytest.txt`. [report.html](report.html) is
+  regenerated for the latest combined run described under Part A below.
+  Opening the local file with the browser tool was blocked by its URL policy,
+  so visual inspection remains pending. Open it locally to review the layout.
 - No commit or push was performed during this Part 0 task.
 
 ## Part 0
@@ -161,7 +162,99 @@ written to these evidence files.
 
 ## Part A
 
-Not started in this task.
+### A1–A2: input model and base choice coverage
+
+Added `test_create_rating.py` with 9 collected cases. README.md maps every
+block of C1–C4 to the exact test that covers it. The base uses integer stars
+`3`, a real pizza from `pizza_id`, and the current user's own token. Each
+non-base case changes only its selected characteristic.
+
+The base case returned 201, preserved stars `3` and the requested pizza ID,
+and the test removed its own created rating. Stars `0` and `6` both returned
+400 with `number of stars must be between 1 and 5 (inclusive)`.
+
+Before writing the A2 assertions, used **curl** to register and log in a
+made-up user, request a real pizza, and send the six additional invalid
+requests through one cookie jar. The following exact responses were then
+asserted in the tests:
+
+| Non-base block | HTTP status | Exact JSON `error` value | Covering test |
+| --- | --- | --- | --- |
+| C2: decimal stars `3.5` | 400 | `json: cannot unmarshal number 3.5 into Go struct field Rating.stars of type int` | `test_stars_invalid_type[decimal]` |
+| C2: text stars `"3"` | 400 | `json: cannot unmarshal string into Go struct field Rating.stars of type int` | `test_stars_invalid_type[text]` |
+| C2: missing stars field | 400 | `number of stars must be between 1 and 5 (inclusive)` | `test_missing_stars_is_refused` |
+| C3: nonexistent pizza ID `999999999` | 400 | `pizza ID 999999999 not found` | `test_nonexistent_pizza_is_refused` |
+| C4: no token header | 401 | `authentication failed` | `test_missing_token_is_refused` |
+| C4: token `short` | 401 | `authentication failed` | `test_short_token_is_refused` |
+
+All 9 cases passed in the Part A run. Base choice coverage uses
+`1 + (3 - 1) + (4 - 1) + (2 - 1) + (3 - 1) = 9` cases for the handout's
+model; all combinations would use `3 * 4 * 2 * 3 = 72`.
+
+### A3: update boundary values
+
+Added the single parametrized test `test_update_stars_boundaries` in
+`test_update_rating.py`. Every case gets a fresh three-star rating and reads
+the saved rating back after the update. It compares the entire saved object
+to the original object with only the accepted stars value changed.
+
+| Stars sent | PUT status | Saved stars after GET | Result |
+| --- | --- | --- | --- |
+| 0 | 400 | 3 (unchanged) | Passed |
+| 1 | 200 | 1 | Passed |
+| 5 | 200 | 5 | Passed |
+| 6 | 400 | 3 (unchanged) | Passed |
+
+Both rejected cases also returned the exact range error above. The owner
+could still read the rating with status 200 in every case. Cleanup removed
+each test's rating afterwards.
+
+### A4: ownership checks
+
+Added the `other_auth` fixture, which creates and logs in another fresh user
+through `log_in_new_user(api)`. Each test in `test_rating_owner.py` receives
+an owner's rating and the other user's token, attempts one operation, checks
+for a 400–499 response, then reads the entire rating as its owner.
+
+| Other user's attempt | Exact status observed | Owner's subsequent GET | Result |
+| --- | --- | --- | --- |
+| Read: `GET /api/ratings/{id}` | **404** | 200, entire object unchanged | Passed |
+| Change to 5 stars: `PUT /api/ratings/{id}` | **400** | 200, entire object unchanged, stars still 3 | Passed |
+| Delete: `DELETE /api/ratings/{id}` | **400** | 200, rating still exists and entire object unchanged | Passed |
+
+These are observed statuses, not assumptions that the service returns 403.
+All three tests satisfy A4's requirement to refuse access with a 4xx status
+and leave the owner's data unchanged.
+
+### Part A test run
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -v -rP test_create_rating.py test_update_rating.py test_rating_owner.py --tb=short
+```
+
+Result: **16 passed in 28.82 seconds**, exit code 0. This comprises 9 create
+cases, 4 update boundary cases and 3 ownership cases. Captured output records
+the exact A4 statuses. Evidence is in the ignored `tmp/partA/` directory:
+`curl-probe-results.json`, per-request curl bodies/headers, and
+`partA-pytest.txt`. The temporary private token header and login response
+were deleted after the curl experiment; private tokens are not deliverables.
+
+### Latest full run: Part 0 + Part A
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -v -rx -rP --html=report.html --self-contained-html
+```
+
+Result: **32 passed, 1 xfailed in 48.24 seconds**, exit code 0. The original
+16 passing Part 0 cases and all 16 new Part A cases passed together. The
+remaining expected failure is still Defect 1 from Step 0.16: excluding all
+three tools returns 500 instead of 400 with a JSON error. The latest A4
+statuses were again 404 for GET, 400 for PUT and 400 for DELETE.
+
+Regenerated [report.html](report.html) for all 33 cases. The complete console
+log is in `tmp/partA/full-pytest.txt`. Browser visual inspection is still
+pending due to the previously observed local-file URL restriction. No commit
+or push was performed during this Part A task.
 
 ## Part B
 

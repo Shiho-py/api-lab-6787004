@@ -50,3 +50,8 @@ def rating(api, auth, pizza_id):
     if res.status_code != 204:
         assert res.status_code == 400, res.text
         assert res.json() == {"error": f"rating ID {made['id']} not found"}
+
+
+@pytest.fixture
+def other_auth(api):
+    return log_in_new_user(api)
