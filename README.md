@@ -3,60 +3,29 @@
 API testing practice using Python, pytest, requests and pytest-html against
 https://quickpizza.grafana.com.
 
-## Requirements
-
-- Python 3.10 or newer
-- Git and a GitHub account
-- curl (use `curl.exe` in Windows PowerShell)
-- Visual Studio Code or another editor with a terminal
-
-## Setup (Windows PowerShell)
-
-Run these commands from the repository folder:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-curl.exe --version
-```
-
-Select `.venv\Scripts\python.exe` as the Python interpreter in your editor.
-If activation is unavailable, use the environment directly without changing
-PowerShell's execution policy:
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m pip check
-.\.venv\Scripts\python.exe -m pytest --version
-```
-
 ## Running tests
 
-Once the lab test files have been added:
+ผลการทดลอง Part 0 
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest -v
-.\.venv\Scripts\python.exe -m pytest -v --html=report.html --self-contained-html
-```
+| ข้อ | การทดลอง | ผลการทดลอง |
+| --- | --- | --- |
+| 0.1 | อ่านรายชื่อพิซซ่าด้วย curl | ได้รายชื่อ 18 ชื่อ ชื่อแรกคือ `Americana` และมี `Margherita` อยู่ในรายการ |
+| 0.2 | ตรวจสอบ status code และ headers | ได้ HTTP 200, `Content-Type: application/json` และ cookies ชื่อ `AWSALB`, `AWSALBCORS` |
+| 0.3 | อ่านเครื่องมือโดยไม่มี token และมี token | ไม่มี token ได้ 401 พร้อม `authentication failed`; มี token ได้ 200 พร้อม `Knife`, `Pizza cutter`, `Scissors` |
+| 0.4 | ส่ง POST ขอพิซซ่ามังสวิรัติด้วย curl | ได้ 200 และพิซซ่า `The Soft Siciliana` โดยวัตถุดิบทุกชนิดมี `vegetarian: true` |
+| 0.5 | ส่งคำขอเดิมด้วย Python requests | คำขอรายชื่อ เครื่องมือ และพิซซ่าได้ 200 ทั้งหมด; แปลง JSON เป็น `dict` ได้ และพิซซ่าที่ได้รับชื่อ `A Tender Funghi` |
+| 0.6 | ทดสอบรายชื่อพิซซ่าและทดลอง assertion ที่ผิด | ตรวจ `Margherita` ผ่าน; เปลี่ยนเป็น `Pineapple Supreme` แล้วล้มเหลวด้วย AssertionError; เปลี่ยนกลับแล้วผ่าน |
+| 0.7 | ทดสอบรายชื่อเครื่องมือโดยส่ง token | ผ่าน: ได้ 200 และรายชื่อเครื่องมือตรงกับทั้ง 3 ชนิดที่คาดไว้ |
+| 0.8 | ทดสอบข้อมูลพิซซ่ามังสวิรัติและคำขอที่ไม่มี token | ผ่านทั้ง 2 กรณี: พิซซ่ามีชื่อและวัตถุดิบเป็นมังสวิรัติทั้งหมด; ไม่มี token ได้ 401 พร้อมข้อความผิดพลาดตรงตามที่คาด |
+| 0.9 | สร้างผู้ใช้และ login ผ่าน Session | สร้างผู้ใช้ได้ 201, login ได้ 200 และอ่านคะแนนได้ 200 พร้อม `{"ratings":[]}`; Session เก็บ cookies ทั้ง 2 ชื่อไว้ |
+| 0.10 | สร้าง fixture `api` สำหรับใช้ Session ร่วมกัน | ชุดทดสอบที่ใช้ fixture ส่งคำขอผ่าน Session เดียวกันได้ และผ่านในรอบสุดท้าย |
+| 0.11 | สร้าง fixture `auth` เพื่อ login ผู้ใช้ใหม่ให้แต่ละเทสต์ | ผ่าน: ผู้ใช้ใหม่ login ได้และยังไม่มีคะแนน; ชุดทดสอบข้อ 0.6–0.11 ผ่านรวม 5 รายการ |
+| 0.12 | ทดลองสร้างผู้ใช้และ login โดยไม่ใช้ Session 3 ครั้ง | ครั้งที่ 1 ผ่าน; ครั้งที่ 2 และ 3 ล้มเหลวเพราะ login ได้ 401 แทน 200 จึงนำเทสต์ทดลองนี้ออกจากชุดหลักตามใบงาน |
+| 0.13 | สร้างคะแนนพิซซ่า | ผ่าน: ได้ 201, คะแนนเท่ากับ 5, `pizza_id` ตรงกับที่ส่ง และ `id` เป็นจำนวนเต็ม |
+| 0.14 | อ่าน แก้ไข และลบคะแนน | ผ่าน: อ่านได้ 200 พร้อมข้อมูลเดิม, แก้เป็น 4 ดาวได้ 200, ลบได้ 204 และอ่านหลังลบได้ 404; รันเทสต์ลบแยกเดี่ยวผ่าน 1 รายการใน 2.70 วินาที |
+| 0.15 | ทดสอบชื่อผู้ใช้ซ้ำ รหัสผ่านผิด และชื่อว่าง | ผ่านทั้ง 3 กรณี: ได้ 400/`username already taken`, 401/`authentication failed` และ 400/`username field is empty` ตามลำดับ |
+| 0.16 | ทดสอบยกเว้นเครื่องมือจำนวน 0, 1, 2 และ 3 ชนิด | ยกเว้น 0–2 ชนิดได้ 200 และไม่ใช้เครื่องมือที่ยกเว้น; ยกเว้นครบ 3 ชนิดได้ 500 พร้อม body ว่าง แทน 400 พร้อม JSON error ยืนยันซ้ำด้วย curl แล้ว และเก็บเป็น `xfail(strict=True)` |
 
-Open `report.html` in a browser to review the report.
-The test files and results belong to Part 0, Part A and Part B and have not
-been implemented during setup.
-
-## QuickPizza shared-site rules
-
-- Create, change and delete only data created by your own tests.
-- Never create or change ratings using the public token `abcdef0123456789`
-  or any token not obtained by logging in as your own test user.
-- Use made-up usernames and passwords, never real credentials.
-- Run the suite only when needed, never in a loop. A complete lab run sends
-  approximately 140 requests and takes about a minute.
-
-## Repository
-
-Current public repository: https://github.com/Shiho-py/api-lab-6787004
-
-The handout specifies the name `api-lab`; the existing repository uses
-`api-lab-6787004`. Its name has been preserved during setup.
-No commit or push is part of this setup task.
+ผลรวมรอบสุดท้าย: **16 passed, 1 xfailed ใน 19.18 วินาที** โดยรายการ
+`xfailed` คือข้อผิดพลาดของ API ในข้อ 0.16 ซึ่งยังคงตรวจผลที่ควรเป็น 400
+พร้อมข้อความผิดพลาดไว้

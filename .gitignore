@@ -1,5 +1,5 @@
-# Python virtual environments
 .venv/
-
-# Local secrets and temporary files
 tmp/
+__pycache__
+.pytest_cache
+docs
