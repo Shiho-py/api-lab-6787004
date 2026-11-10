@@ -1,0 +1,5 @@
+# Python virtual environments
+.venv/
+
+# Local secrets and temporary files
+tmp/
