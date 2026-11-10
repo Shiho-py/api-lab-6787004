@@ -3,7 +3,49 @@
 API testing practice using Python, pytest, requests and pytest-html against
 https://quickpizza.grafana.com.
 
-## Running tests
+## Installation and running tests
+
+ต้องมี Python 3.10 ขึ้นไปและ Git โดยใช้คำสั่งต่อไปนี้ใน Windows PowerShell
+
+1. Clone repository และเข้าโฟลเดอร์งาน:
+
+   ```powershell
+   git clone https://github.com/Shiho-py/api-lab-6787004.git
+   cd api-lab-6787004
+   ```
+
+2. สร้าง virtual environment และติดตั้งแพ็กเกจ:
+
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+   ```
+
+3. รันชุดทดสอบทั้งหมดจากโฟลเดอร์ repository:
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m pytest -v
+   ```
+
+4. สร้างรายงาน HTML และเปิดดูใน browser:
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m pytest -v --html=report.html --self-contained-html
+   Start-Process .\report.html
+   ```
+
+รันเทสต์เดี่ยวเพื่อตรวจว่าไม่ขึ้นกับเทสต์ก่อนหน้าได้ด้วย:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -v test_ratings.py::test_delete_rating
+```
+
+ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อเรียก QuickPizza API ชุดทดสอบสร้างผู้ใช้สมมติ
+และจัดการเฉพาะ ratings ของตนเอง ให้รันเมื่อจำเป็นและไม่รันวนเป็น loop
+ผลที่ใบงานคาดหวังคือ `32 passed, 1 xfailed` โดย `xfailed` เป็นบั๊กการยกเว้น
+เครื่องมือครบทุกชนิด ซึ่งติดตามด้วย `xfail(strict=True)`
+
+## Part 0 results
 
 ผลการทดลอง Part 0 
 

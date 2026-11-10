@@ -3,6 +3,7 @@ import pytest
 from test_create_rating import STARS_ERROR
 
 
+# Updates save 1 or 5 stars; rejected values leave the rating unchanged.
 @pytest.mark.parametrize("stars, expected_status", [(0, 400), (1, 200), (5, 200), (6, 400)])
 def test_update_stars_boundaries(api, auth, rating, stars, expected_status):
     path = f"/api/ratings/{rating['id']}"
